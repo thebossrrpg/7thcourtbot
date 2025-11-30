@@ -43,27 +43,53 @@ def comando_re(message):
 
     apagar_depois(CHAT_ID, enviado.message_id)
 
-# === MONITOR NOTION ===
+# === MONITOR NOTION COM DEBOUNCE INTELIGENTE ===
 def monitor_notion():
     global last_edited_time, last_send_time
+
     url = f"https://api.notion.com/v1/pages/{PAGE_ID}"
     headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"}
+
+    debounce_timer = None          # timer pra esperar parar de editar
+    DEBOUNCE_SEGUNDOS = 20         # ← muda aqui se quiser 15s, 30s, etc.
+
     while True:
         try:
             r = requests.get(url, headers=headers, timeout=10)
             if r.status_code == 200:
                 current = r.json()["last_edited_time"]
+
                 if current != last_edited_time:
-                    agora = datetime.now()
-                    if agora - last_send_time >= COOLDOWN:
-                        enviado = bot.send_message(CHAT_ID, MENSAGEM)
-                        print(f"[{agora.strftime('%H:%M:%S')}] Notificação automática enviada")
-                        last_send_time = agora
-                        apagar_depois(CHAT_ID, enviado.message_id)
+                    print(f"Edição detectada às {datetime.now().strftime('%H:%M:%S')}")
+
                     last_edited_time = current
+
+                    # Cancela timer anterior (se ainda estiver rodando)
+                    if debounce_timer:
+                        debounce_timer.cancel()
+
+                    # Cria novo timer: só vai disparar se parar de editar por 20s
+                    debounce_timer = Timer(DEBOUNCE_SEGUNDOS, lambda: tentar_enviar())
+                    debounce_timer.start()
+
         except Exception as e:
             print(f"Erro monitor: {e}")
-        time.sleep(30)
+
+        time.sleep(25)  # checa a cada ~25s (economiza requests)
+
+# Função separada pra tentar enviar (chamada pelo debounce)
+def tentar_enviar():
+    global last_send_time
+    agora = datetime.now()
+
+    # Só envia se já passaram 3 minutos desde a última notificação
+    if agora - last_send_time >= COOLDOWN:
+        enviado = bot.send_message(CHAT_ID, MENSAGEM)
+        print(f"[{agora.strftime('%H:%M:%S')}] Notificação enviada (após debounce)")
+        last_send_time = agora
+        apagar_depois(CHAT_ID, enviado.message_id)
+    else:
+        print("Debounce completou, mas ainda dentro do cooldown de 3 min — ignorando")
 
 print("7th Court Roleplay BOT + MONITOR — ONLINE 24/7")
 Thread(target=monitor_notion, daemon=True).start()

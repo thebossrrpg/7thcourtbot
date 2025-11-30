@@ -56,54 +56,46 @@ def monitor_notion():
     url = f"https://api.notion.com/v1/pages/{PAGE_ID}"
     headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"}
     
-    # INICIALIZAÇÃO OBRIGATÓRIA
-    print("🔄 Buscando estado inicial da página...")
+    # === INICIALIZAÇÃO ===
+    print("Buscando estado inicial da página...")
     try:
         r = requests.get(url, headers=headers, timeout=10)
-        if r.status_code == 200:
-            last_edited_time = r.json()["last_edited_time"]
-            print(f"✅ Inicializado com: {last_edited_time[-12:-4]}")
-        else:
-            print("❌ Falha na inicialização")
-            time.sleep(30)
-            return
+        r.raise_for_status()
+        last_edited_time = r.json()["last_edited_time"]
+        print(f"Inicializado → última edição: {last_edited_time[-12:-4]}")
     except Exception as e:
-        print(f"❌ Erro inicial: {e}")
+        print(f"Erro na inicialização: {e}")
         time.sleep(30)
-        return
-    
-    silencio_start = None
+        return monitor_notion()  # tenta de novo
+
+    print("Monitoramento ativo — só manda mensagem quando houver EDIÇÃO REAL")
     
     while True:
         try:
             r = requests.get(url, headers=headers, timeout=10)
-            if r.status_code == 200:
-                current = r.json()["last_edited_time"]
+            r.raise_for_status()
+            current = r.json()["last_edited_time"]
+
+            agora = datetime.now()
+
+            # HOUVE EDIÇÃO NOVA?
+            if current != last_edited_time:
+                print(f"EDIÇÃO DETECTADA → {current[-12:-4]}")
+                last_edited_time = current
                 
-                if current != last_edited_time:
-                    print(f"🔄 Edição detectada → {current[-12:-4]}")
-                    last_edited_time = current
-                    silencio_start = None
-                    continue
-                
-                # SEM EDIÇÃO
-                agora = datetime.now()
-                if silencio_start is None:
-                    silencio_start = agora
-                    print("⏳ Iniciando 30s de silêncio...")
+                # Só manda se respeitar o cooldown de 3 minutos
+                if agora - last_send_time >= COOLDOWN:
+                    print("ENVIANDO mensagem (edição real)")
+                    enviado = bot.send_message(CHAT_ID, MENSAGEM)
+                    last_send_time = agora
+                    apagar_depois(CHAT_ID, enviado.message_id)
                 else:
-                    tempo_silencio = (agora - silencio_start).total_seconds()
-                    if tempo_silencio >= 30:
-                        if agora - last_send_time >= COOLDOWN:
-                            print("✅ ENVIANDO após 30s silêncio!")
-                            enviado = bot.send_message(CHAT_ID, MENSAGEM)
-                            last_send_time = agora
-                            apagar_depois(CHAT_ID, enviado.message_id)
-                        silencio_start = None  # Reset após checagem
-                
+                    print(f"Edição detectada, mas ainda em cooldown ({int((COOLDOWN - (agora - last_send_time)).total_seconds())}s)")
+            
             time.sleep(5)
+
         except Exception as e:
-            print(f"Erro: {e}")
+            print(f"Erro no loop: {e}")
             time.sleep(10)
             
 # === FUNÇÃO PARA RODAR O BOT ===

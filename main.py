@@ -41,8 +41,9 @@ def comando_re(message):
 
 # === MONITOR NOTION COM DEBOUNCE 20s + COOLDOWN 3min (perfeito) ===
 def monitor_notion():
-    global last_edited_time, last_send_time = None, datetime.min
-    global last_edited_time, last_send_time  # só pra deixar o linter feliz
+global last_edited_time, last_send_time
+    last_edited_time = None
+    last_send_time = datetime.min
 
     url = f"https://api.notion.com/v1/pages/{PAGE_ID}"
     headers = {"Authorization": f"Bearer {NOTION_TOKEN}", "Notion-Version": "2022-06-28"}

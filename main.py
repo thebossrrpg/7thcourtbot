@@ -79,7 +79,7 @@ print("7th Court Roleplay BOT + MONITOR — ONLINE 24/7")
 Thread(target=monitor_notion, daemon=True).start()
 bot.infinity_polling()
 
-# === HEALTH CHECK PRA UPTIME KUMA (não pesa nada) ===
+# === HEALTH CHECK PRA UPTIME KUMA (roda em paralelo, zero impacto) ===
 from flask import Flask
 import threading
 
@@ -90,6 +90,6 @@ def health():
     return "7th Court vivo! ❤️", 200
 
 def run_flask():
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host='0.0.0.0', port=8080)
 
 threading.Thread(target=run_flask, daemon=True).start()

@@ -1,16 +1,17 @@
 import telebot
 import requests
 import time
+import os
 from datetime import datetime, timedelta
 from threading import Thread
 from flask import Flask
 
 # === CONFIGURAÇÕES ===
-NOTION_TOKEN = 'ntn_b70490395432oqvvJldbsMBs0H3dbBK0g0GAeEf9VCigUG'
-PAGE_ID = '2ad1a427ceb7815598cdffb8271f5d43'
-TELEGRAM_TOKEN = '8218809414:AAFyiyjZyfBYgWDIiw3vdGC5miW9HreyTlw'
-CHAT_ID = -1003267500349
-MENSAGEM = "Uma nova resposta foi enviada em 7th Court Roleplay."
+NOTION_TOKEN = os.getenv('NOTION_TOKEN', 'ntn_b70490395432oqvvJldbsMBs0H3dbBK0g0GAeEf9VCigUG')
+PAGE_ID = os.getenv('PAGE_ID', '2ad1a427ceb7815598cdffb8271f5d43')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', '8218809414:AAFyiyjZyfBYgWDIiw3vdGC5miW9HreyTlw')
+CHAT_ID = int(os.getenv('CHAT_ID', '-1003267500349'))
+MENSAGEM = os.getenv('MENSAGEM', "Uma nova resposta foi enviada em 7th Court Roleplay.")
 COOLDOWN = timedelta(minutes=3)
 HORAS_24 = 24 * 60 * 60
 
@@ -111,8 +112,8 @@ Thread(target=monitor_notion, daemon=True).start()
 
 # 2. Flask em background (só pro health check)
 def run_flask():
-    print("Flask ativo na porta 8080 → health check OK")
-    app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+    print("Flask ativo na porta 5000 → health check OK")
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
 Thread(target=run_flask, daemon=True).start()
 

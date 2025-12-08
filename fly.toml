@@ -1,7 +1,6 @@
 # Fly.io configuration file
 app = "7thcourtmonitor"
-primary_region = "syd"
-
+primary_region = "gru"
 [build]
   dockerfile = "Dockerfile"
 
